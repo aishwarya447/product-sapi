@@ -74,7 +74,8 @@
 						  <ignoreFile>common-error-handler.xml</ignoreFile>
 						  <ignoreFile>global.xml</ignoreFile>
 					    </ignoreFiles>
-					</coverage>					
+					</coverage>
+					<skipMunitTests>True</skipMunitTests>
 				</configuration>
 			</plugin>
 		</plugins>
