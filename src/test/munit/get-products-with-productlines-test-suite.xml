@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="get-products-with-productlines-test-suite.xml" />
+	<munit:test name="get-products-with-productlines-test-suite-get-products-with-productlines-mainTest" doc:id="4e6b9f6c-eff1-437f-9e98-3db3f4669e2a" description="Test">
+		<munit:behavior >
+			<munit-tools:mock-when doc:name="Mock DB" doc:id="e9d22c4a-b840-4b03-8d12-f0841ad9733f" processor="db:select">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="Get Products And ProductLines" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value='#[output application/json --- readUrl("classpath://examples/Get_Products/DB_Response.json", "application/json")]' mediaType="application/json" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to get-products-with-productlines-main" doc:id="61bd3829-03a6-4466-a304-23a49cdb0c01" name="get-products-with-productlines-main"/>
+		</munit:execution>
+		<munit:validation>
+			<set-variable value='#[output application/json --- readUrl("classpath://examples/Get_Products/DB_Response.json", "application/json")]' doc:name="Expected Payload" doc:id="e29ec30e-890d-4736-b286-4d87982e057c" variableName="expectedPayload"/>
+			<munit-tools:assert-that doc:name="Assert that expected payload" doc:id="82638153-dd0d-4cc2-a2eb-983b7b57bf93" expression="#[vars.expectedPayload]" is="#[MunitTools::equalTo(payload)]"/>
+		</munit:validation>
+	</munit:test>
+
+
+</mule>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="put-products-with-productlines-main" doc:id="8e72f1da-c154-4dad-9a76-8eaa2e0ce688" >
+		<set-variable value="#[attributes.uriParams.productId]" doc:name="Set product Code" doc:id="8202eff2-a78b-44bb-aa93-8db3665bbc62" variableName="productCode"/>
+		<ee:transform doc:name="Transform Message" doc:id="cff81c60-f26f-4365-bd8b-2e67f7a2f09f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ {productCode: vars.productCode}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="b1b87108-e2d8-45b0-8c5e-f2680ff81ec9" >
+			<route >
+				<db:update doc:name="Update Product details" doc:id="bc7d94a5-6469-4366-9dd4-ff8f31999f61" config-ref="Database_Config">
+					<db:sql ><![CDATA[UPDATE products
+SET  productName = :productName, productLine= :productLine,productScale= :productScale, productVendor= :productVendor, productDescription=  :productDescription, quantityInStock=:quantityInStock, buyPrice= :buyPrice, MSRP= :MSRP
+WHERE productCode = :productCode;]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+productCode :payload.productCode,
+productName: payload.productName,
+productLine: payload.productLine,
+productScale: payload.productScale,
+productVendor: payload.productVendor,
+productDescription: payload.productDescription,
+quantityInStock: payload.quantityInStock,
+buyPrice: payload.buyPrice,
+MSRP: payload.MSRP
+}]]]></db:input-parameters>
+				</db:update>
+			</route>
+			<route >
+				<db:update doc:name="Update ProductLine Details" doc:id="f06b5df6-00b4-45ee-bce5-ca1893b3050c" config-ref="Database_Config">
+					<db:sql ><![CDATA[UPDATE productlines SET textDescription = :textDescription  WHERE productLine = :productLine;]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+productLine: payload.productLine,
+textDescription: payload.textDescription
+}]]]></db:input-parameters>
+				</db:update>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="26ecaf54-bd2d-4f08-98da-8d1d3fefc5db" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "productId": vars.productCode,
+  "Status": "Updated Successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="72e9d329-768d-424d-b48b-3a2ebea6ce33" type="DB:CONNECTIVITY">
+				<ee:transform doc:name="Transform Message" doc:id="a40c7d51-ff8c-43a7-a1c7-37b25742dc80" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "Database connectivity issue"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="9aa68176-3e11-4dae-942d-c3e2eafb252b" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="b065fdd4-7751-4a6e-bd12-63468fd16b8d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

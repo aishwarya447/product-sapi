@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	
+	<flow name="get-products-with-productlines-main" doc:id="bd942f06-050c-43be-9cee-532b54a41a3f" >
+		<db:select doc:name="Get Products And ProductLines" doc:id="798b1010-f5fc-4506-9c4a-a7b3839b9da6" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT P.productCode,P.productName,P.productLine,P.productScale,P.productVendor,P.productDescription,P.quantityInStock,P.buyPrice,P.MSRP,L.textDescription FROM products P join productlines L on P.productLine = L.productLine;]]></db:sql>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="e25d8455-c918-4dfe-b779-9baeaa477def" message="#[output application/json --- payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="8890bc4a-1cb4-4051-82f8-1f259b240a94" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7742b49e-44ab-4bba-ba9f-ee7e754e2acf" type="DB:CONNECTIVITY">
+				<ee:transform doc:name="Transform Message" doc:id="f7e54987-e741-4b26-871a-68cb442b9dad" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "Database connectivity issue"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="da035a42-bd27-40f9-af42-52023ba595de" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="8971ba4c-1cc3-45c3-b632-8c955935abdf" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

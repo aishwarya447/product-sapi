@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="post-products-with-productlines-main" doc:id="ce0fddbb-729f-47b0-91d5-ec1a093a8189" >
+		<set-variable value='#["S_"++ randomInt(99999) as String]' doc:name="Set ProductCode" doc:id="e960e4d8-a8f0-474d-b17a-5ae6238e65bd" variableName="productCode"/>
+		<ee:transform doc:name="Transform Message" doc:id="2b688b7b-7685-4924-b0e6-d9011f9a2d66">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ {productCode: vars.productCode}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="34bd624a-51d9-4777-a1ad-1a241afb6b4a" >
+			<route >
+				<db:insert doc:name="Insert Product Details" doc:id="6eb3aa7d-b937-4390-bc54-6fefd110c278" config-ref="Database_Config">
+					<db:sql ><![CDATA[INSERT INTO products (productCode,productName,productLine,productScale,productVendor,productDescription,quantityInStock,buyPrice,MSRP) VALUES (:productCode,:productName,:productLine,:productScale,:productVendor,:productDescription,:quantityInStock,:buyPrice,:MSRP);]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+productCode :payload.productCode,
+productName: payload.productName,
+productLine: payload.productLine,
+productScale: payload.productScale,
+productVendor: payload.productVendor,
+productDescription: payload.productDescription,
+quantityInStock: payload.quantityInStock,
+buyPrice: payload.buyPrice,
+MSRP: payload.MSRP
+}]]]></db:input-parameters>
+				</db:insert>
+			</route>
+			<route >
+				<db:select doc:name="Select" doc:id="51922049-0e20-4f31-ac1b-ff7f556f1cb3" config-ref="Database_Config">
+					<db:sql ><![CDATA[SELECT * FROM 5zXNFznNeP.productlines where productLine = :productLine;]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+productLine: payload.productLine
+}]]]></db:input-parameters>
+				</db:select>
+				<choice doc:name="Choice" doc:id="0f80fcd8-c7ce-44cf-989f-a6efe4474f60" >
+					<when expression="#[sizeOf(payload) == 0]">
+						<db:insert doc:name="Insert Product Lines" doc:id="32407cac-5aae-40c3-9cdb-50c175ac9db8" config-ref="Database_Config">
+					<db:sql><![CDATA[INSERT INTO productlines (productLine,textDescription) VALUES (:productLine,:textDescription);]]></db:sql>
+					<db:input-parameters><![CDATA[#[{
+productLine: payload.productLine,
+textDescription: payload.textDescription
+}]]]></db:input-parameters>
+				</db:insert>
+					</when>
+				</choice>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="5b48ad89-6e5c-458b-9025-739e7f65136d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+  {
+    productId: vars.productCode
+  }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="20eab689-22a7-438b-8535-478db486083c" type="DB:CONNECTIVITY">
+				<ee:transform doc:name="Transform Message" doc:id="456d12ea-5eae-4d4f-84a7-abf74228346f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: "Database connectivity issue"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="696c1ae8-b9cd-46e6-aab3-6977351e499b" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="c9a7cfca-ecd2-4efb-9e6b-99cf925ea3fc" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
