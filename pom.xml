@@ -31,12 +31,23 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
+					<cloudHubDeployment>
+						<muleVersion>${muleVersion}</muleVersion>
+						<username>${username}</username>
+						<password>${password}</password>
+						<environment>${environment}</environment>
+						<applicationName>${applicationName}</applicationName>
+						<workers>${workers}</workers>
+						<workerType>${workerType}</workerType>
+						<objectStoreV2>${objectStoreV2}</objectStoreV2>
+					</cloudHubDeployment>
 					<sharedLibraries>
 						<sharedLibrary>
 							<groupId>mysql</groupId>
 							<artifactId>mysql-connector-java</artifactId>
 						</sharedLibrary>
 					</sharedLibraries>
+					<classifier>mule-application</classifier>
 				</configuration>
 			</plugin>
 			<plugin>
