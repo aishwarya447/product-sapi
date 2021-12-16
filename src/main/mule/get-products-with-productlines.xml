@@ -27,7 +27,7 @@ payload]]></ee:set-payload>
 output application/json
 ---
 {
-	error: "Database Connectivity Issue"
+	error: "Database Connectivity issue"
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
